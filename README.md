@@ -1,2 +1,2 @@
 # Tools
-some little tools for work
+some small tools for work
