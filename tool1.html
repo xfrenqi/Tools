@@ -1,0 +1,176 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Convert Text To Code</title>
+    <script type="text/javascript">
+        function convertToCode() {
+            var source = gid("source").value;
+            var template = gid("template").value
+            var result = convertTextToCode(source, template);
+            gid("result").value = result;
+        }
+        function convertToText() {
+            var template = gid("template").value
+            var result = gid("result").value
+            var source = convertCodeToText(result, template);
+            gid("source").value = source;
+        }
+        function convertTextToCode(source, template) {
+            var result = "";
+            var lines = source.split("\n");
+            var objTree = new Array();
+            var objResult = new Array();
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i];
+                // 空行
+                if (line.replace(/\t/g, "") == "") {
+                    objTree.push("");
+                }
+                else {
+                    var cells = line.split("\t");
+                    if (cells.length > 0) {
+                        objTree.push(cells);
+                    }
+                }
+            }
+            //console.log(objTree);
+            for (var i = 0; i < objTree.length; i++) {
+                var row = objTree[i];
+                // 空行
+                if (row == "") {
+                    objResult.push("");
+                    continue;
+                }
+                var temp = template;
+                for (var j = 0; j < row.length; j++) {
+                    var a = row[j];
+                    if (a != undefined) {
+                        a = a.trim();
+                        var reg = new RegExp("\\{" + j + "\\}", 'g');//g就是代表全部
+                        temp = temp.replace(reg, a);
+                    }
+                }
+                objResult.push(temp);
+            }
+            result = objResult.join("\n");
+            return result;
+        }
+        function convertCodeToText(str, template) {
+            var result = "";
+            var args = template.match(/{\d+}/g);
+            ////console.log(c);
+            if (args == null)
+                return "";
+            var rs = new Array();
+            var lines = str.split("\n");
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i];
+                var ss = getRow(template, line, args);
+                var r = ss.join("\t");
+                rs.push(r);
+            }
+            result = rs.join("\n");
+            return result;
+        }
+        function getRow(template, line, args) {
+            // temp line for match
+            var t_line = line;
+            var rs = new Array();
+            for (var i = 0; i < args.length; i++) {
+                var v = getCell(template, t_line, args, i);
+                // delete the found string
+                t_line = gett_line(template, t_line, v, i);
+                rs.push(v);
+            }
+            //console.log(rs);
+            return rs;
+        }
+        function gett_line(template, t_line, v, i) {
+            var p = template.split(/{\d+}/g)[i];
+            p = p + v;
+            // 兼容
+            p = getCompatiblePattern(p);
+            //var r = new RegExp(p, "g");
+            var r = new RegExp(p);
+            t_line = t_line.replace(r, "");
+            // console.log(r);
+            // console.log(t_line);
+            return t_line;
+        }
+        function getCell(template, line, args, i) {
+            var p = template.replace(args[i], "(.*?)");
+            p = p.split(/{\d+}/g)[i];
+            // 兼容
+            p = getCompatiblePattern(p);
+            var r = new RegExp(p, "g");
+            var v = getValueByReg(r, line);
+            // console.log(r);
+            // console.log(line);
+            // console.log(v);
+            return v;
+        }
+        function getCompatiblePattern(p) {
+            // 兼容开始
+            // 空格兼容
+            p = p.replace(/\s+/g, "\\s*");
+            // 等号前后空格
+            p = p.replace(/=/g, "\\s*=\\s*");
+            // 兼容结束
+            return p;
+        }
+        function getValueByReg(reg, str) {
+            var result;
+            if ((result = reg.exec(str)) != null) {
+                if (result[1] != undefined) {
+                    return result[1];
+                }
+                return null;
+            }
+            return null;
+        }
+        function gid(id) {
+            return document.getElementById(id);
+        }
+        function demo()
+        {
+            var s = "张三	21	音乐\n李四	29	散步\n王五	18	看书";
+            gid("source").value = s;
+            var t = "我叫{0}，今年{1}岁了，我喜欢{2}。";
+            gid("template").value = t;
+        }
+    </script>
+</head>
+
+<body>
+    <h2>
+        Convert Text To Code</h2>
+    <div>
+        <p>Text:</p>
+        <textarea id="source" rows="10" cols="100" placeholder="请在excel里复制下内容贴到这里"></textarea>
+    </div>
+    <br />
+    <div>
+        <p>Template:</p>
+        <textarea id="template" rows="6" cols="100"></textarea>
+    </div>
+    <br />
+    <div>
+        <input type="button" value="Text To Code &#8595" onclick="convertToCode();" />
+        <input type="button" value="Code to Text &#8593" onclick="convertToText();" />
+        <input type="button" value="Demo" onclick="demo();" />
+    </div>
+    <br />
+    <div>
+        <p>Code:</p>
+        <textarea id="result" rows="10" cols="100"></textarea>
+    </div>
+</body>
+
+</html>

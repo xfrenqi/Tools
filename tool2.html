@@ -1,0 +1,173 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Convert Text To JSON Object</title>
+    <script type="text/javascript">
+        function convertToJSON() {
+            var source = gid("source").value;
+            var result = convertTextToJSON(source);
+            gid("result").value = result;
+        }
+        function convertToJSONSpace() {
+            var source = gid("source").value;
+            var result = convertTextToJSON(source, "    ");
+            gid("result").value = result;
+        }
+        function convertToText() {
+            var source = gid("result").value;
+            var result = convertJSONToText(source);
+            gid("source").value = result;
+        }
+        function convertTextToJSON(source, space) {
+            var result = "";
+            var lines = source.split("\n");
+            var objTree = new Array();
+            var objTemp = new Array();
+            var col;
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i];
+                // 空行
+                if (line.replace(/\t/g, "") == "") {
+                    continue;
+                }
+                var cells = line.split("\t");
+                // first line
+                if (i == 0) {
+                    if (cells.length > 0) {
+                        col = cells;
+                    }
+                    continue;
+                }
+                if (cells.length > 0) {
+                    var node = new Object();
+                    for (var j = 0; j < cells.length; j++) {
+                        //node[col[j]] = $.trim(cells[j]);
+                        var v = cells[j].trim();
+                        v = convertToJSType(v);
+                        node[col[j].trim()] = v;
+                    }
+                    objTree.push(node);
+                }
+            }
+            result = JSON.stringify(objTree, null, space);
+            return result;
+        }
+        function convertToJSType(v) {
+            switch (v) {
+                case "": return "";
+                    break;
+                case "true": return true;
+                    break;
+                case "false": return false;
+                    break;
+                case "null": return null;
+                    break;
+            }
+            if (!isNaN(v))
+                v = Number(v);
+            return v;
+        }
+        function addChildren(tree, node) {
+            if (tree.children == null) {
+                tree.children = new Array();
+            }
+            tree.children.push(node);
+            return tree;
+        }
+        function convertJSONToText(source) {
+            if (source == "")
+                return;
+            var result = "";
+            var objTree;
+            try {
+                objTree = JSON.parse(source);
+            }
+            catch (err) {
+                alert(err.Message);
+                return;
+            }
+            var col = [];
+            for (var i = 0; i < objTree.length; i++) {
+                var node = objTree[i];
+                // 取col
+                if (i == 0) {
+                    for (key in node) {
+                        if (node.hasOwnProperty(key)) {
+                            col.push(key);
+                        }
+                    }
+                    result += col.join('\t');
+                    result += "\n";
+                }
+                var row = [];
+                for (var j = 0; j < col.length; j++) {
+                    row.push(node[col[j]]);
+                }
+                result += row.join('\t');
+                result += "\n";
+            }
+            return result;
+        }
+        function getNodeName(node, level, isFirstChild) {
+            var result = "";
+            if (node.children == null) {
+                if (!isFirstChild) {
+                    result = addTab(level);
+                }
+                result += node.name + "\n";
+            }
+            else {
+                if (!isFirstChild) {
+                    result = addTab(level);
+                }
+                result += node.name + "\t";
+                for (var i = 0; i < node.children.length; i++) {
+                    isFirstChild = i == 0 ? true : false;
+                    result += getNodeName(node.children[i], level + 1, isFirstChild);
+                }
+            }
+            return result;
+        }
+        function addTab(n) {
+            var arr = new Array(n + 1);
+            return arr.join("\t");
+        }
+        function gid(id) {
+            return document.getElementById(id);
+        }
+        function demo() {
+            var v = "name	age	hobby\n张三	21	音乐\n李四	29	散步\n王五	18	看书";
+            gid("source").value = v;
+        }
+    </script>
+</head>
+
+<body>
+    <h2>
+        Convert Text To JSON Ojbect</h2>
+    <div>
+        <p>Text:</p>
+        <textarea id="source" rows="15" cols="100" placeholder="请在excel里复制下内容贴到这里"></textarea>
+    </div>
+    <br />
+    <div>
+        <input type="button" value="Text To JSON &#8595" onclick="convertToJSON();" />
+        <input type="button" value="Text To JSON with Space &#8595" onclick="convertToJSONSpace();" />
+        <input type="button" value="JSON To Text &#8593" onclick="convertToText();" />
+        <input type="button" value="Demo" onclick="demo();" />
+    </div>
+    <br />
+    <div>
+        <p>JSON:</p>
+        <textarea id="result" rows="15" cols="100"></textarea>
+    </div>
+</body>
+
+</html>
